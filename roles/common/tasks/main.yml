@@ -24,7 +24,7 @@
   ufw:
     rule: allow
     proto: tcp
-    src: '{{ ssh_allowd_ip }}'
+    from: '{{ ssh_allowd_ip }}'
     port: '22'
 
 - name: enable ufw
