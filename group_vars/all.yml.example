@@ -2,3 +2,7 @@ ansible_ssh_user: ubuntu
 ansible_become: yes
 
 ssh_allowd_ip: 1.2.3.4
+
+hostname_fqdn: sv1.example.com
+
+letsencrypt_email: user@example.com

@@ -1,0 +1,98 @@
+---
+- name: snap install core
+  snap:
+    name: core
+
+- name: snap install certbot
+  snap:
+    name: certbot
+    classic: true
+
+- name: get stats of /snap/bin/certbot
+  stat:
+    path: /snap/bin/certbot
+  register: snap_bin_certbot
+
+- name: create symbolic link to /snap/bin/certbot
+  file:
+    src: /snap/bin/certbot
+    dest: /usr/bin/certbot
+    owner: root
+    group: root
+    state: link
+  when: snap_bin_certbot.stat.exists
+
+- name: get stats of /etc/letsencrypt/live/{{ hostname_fqdn }}
+  stat:
+    path: /etc/letsencrypt/live/{{ hostname_fqdn }}
+  register: letsencrypt
+
+- name: get certificate
+  shell: sudo certbot certonly --apache --agree-tos -m {{ letsencrypt_email }} -d {{ hostname_fqdn }} -n
+  when: not letsencrypt.stat.exists
+
+- name: get stats of /etc/apache2/sites-enabled/000-default.conf
+  stat:
+    path: /etc/apache2/sites-enabled/000-default.conf
+  register: default_conf
+
+- name: disable 000-default.conf
+  command: a2dissite 000-default.conf
+  when: default_conf.stat.exists
+
+- name: get stats of /etc/apache2/mods-enabled/rewrite.load
+  stat:
+    path: /etc/apache2/mods-enabled/rewrite.load
+  register: rewrite_load
+
+- name: enable rewrite
+  command: a2enmod rewrite
+  when: not rewrite_load.stat.exists
+
+- name: get stats of /etc/apache2/mods-enabled/ssl.load
+  stat:
+    path: /etc/apache2/mods-enabled/ssl.load
+  register: ssl_load
+
+- name: enable ssl
+  command: a2enmod ssl
+  when: not ssl_load.stat.exists
+
+- name: template to /etc/apache2/sites-available/mysite.conf
+  template:
+    src: templates/mysite.conf.j2
+    dest: /etc/apache2/sites-available/mysite.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: "reload apache2"
+
+- name: get stats of /etc/apache2/sites-enabled/mysite.conf
+  stat:
+    path: /etc/apache2/sites-enabled/mysite.conf
+  register: mysite_conf
+
+- name: enable mysite.conf
+  command: a2ensite mysite.conf
+  when: not mysite_conf.stat.exists
+
+- name: template to /etc/apache2/sites-available/mysite-ssl.conf
+  template:
+    src: templates/mysite-ssl.conf.j2
+    dest: /etc/apache2/sites-available/mysite-ssl.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: "reload apache2"
+
+- name: get stats of /etc/apache2/sites-enabled/mysite-ssl.conf
+  stat:
+    path: /etc/apache2/sites-enabled/mysite-ssl.conf
+  register: mysite_ssl_conf
+
+- name: enable mysite-ssl.conf
+  command: a2ensite mysite-ssl.conf
+  when: not mysite_ssl_conf.stat.exists
+
+- name: gather package facts
+  package_facts:

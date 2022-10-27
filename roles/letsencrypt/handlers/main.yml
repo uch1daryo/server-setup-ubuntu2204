@@ -1,0 +1,7 @@
+---
+- name: reload apache2
+  service:
+    name: apache2
+    state: reloaded
+  listen: "reload apache2"
+  when: "'apache2' in ansible_facts.packages"
