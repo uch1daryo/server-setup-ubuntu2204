@@ -6,3 +6,9 @@ ssh_allowed_ip: 1.2.3.4
 hostname_fqdn: sv1.example.com
 
 letsencrypt_email: user@example.com
+
+slapd_domain: example.com
+slapd_organization: Example Inc.
+slapd_admin_password: secret
+
+ldap_allowed_ip: 1.2.3.4

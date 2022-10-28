@@ -1,0 +1,41 @@
+---
+- name: install required packages
+  apt:
+    pkg:
+    - slapd
+    - ldap-utils
+    - libnss-ldapd
+    - libpam-ldapd
+    - debconf-utils
+
+- name: template to /root/debconf-slapd.conf
+  template:
+    src: templates/debconf-slapd.conf.j2
+    dest: /root/debconf-slapd.conf
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: get stats of /root/reconfigured-slapd
+  stat:
+    path: /root/reconfigured-slapd
+  register: reconfigured_slapd
+
+- name: congigure debconf-set-selections
+  shell: cat /root/debconf-slapd.conf | debconf-set-selections
+  when: not reconfigured_slapd.stat.exists
+
+- name: run dpkg-reconfigure
+  command: dpkg-reconfigure -f noninteractive slapd
+  when: not reconfigured_slapd.stat.exists
+
+- name: create reconfigured-slapd
+  command: touch /root/reconfigured-slapd
+  when: not reconfigured_slapd.stat.exists
+
+- name: allow access to LDAP from allowed ip
+  ufw:
+    rule: allow
+    proto: tcp
+    from: '{{ ldap_allowed_ip }}'
+    port: '389'
